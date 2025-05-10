@@ -17,7 +17,7 @@
 - Windows (tested on Windows 10/11)
 - [Olimex OpenEEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) connected via USB
 - Device mapped to `COM3` (can be changed in source code)
-- Visual Studio (or any C compiler for Windows)
+- a C compiler for Windows, i.e. [MINGW](https://sourceforge.net/projects/mingw/)
 - FTDI VCP driver installed: [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
 
 ## 🧭 Getting Started

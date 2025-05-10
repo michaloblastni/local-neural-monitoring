@@ -17,12 +17,11 @@
 - Windows (tested on Windows 10/11)
 - [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) connected via USB
 - Device mapped to `COM3` (can be changed in source code)
-- a C compiler for Windows, i.e. [MINGW](https://sourceforge.net/projects/mingw/)
 - FTDI VCP driver installed: [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
 
 ## 🧭 Getting Started
 
-1. Build the application in Visual Studio or using your preferred build setup.
+1. If you are a developer, build the application using a C compiler for Windows, i.e. [MINGW](https://sourceforge.net/projects/mingw/). Otherwise, use the provided .exe.
 2. Connect your OpenEEG-SMT device via USB and ensure it appears as `COM3`.
 3. Run the application. The EEG waveform will update in real time.
 4. Optionally place a `help.chm` file in the application folder to enable Help → Contents.

@@ -5,6 +5,8 @@
 ## 🗃️ Release
 - [0.0.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
 
+![Local Neural Monitoring](local_neural_monitoring.png)
+
 ## ✅ Features
 
 - 📡 Real-time visualization of EEG data from Olimex OpenEEG-SMT (CH1 and CH2)

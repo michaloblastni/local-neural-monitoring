@@ -4,7 +4,7 @@
 
 ## ✅ Features
 
-- 📡 Real-time visualization of EEG data from Olimex EEG-SMT (CH1 and CH2)
+- 📡 Real-time visualization of EEG data from Olimex OpenEEG-SMT (CH1 and CH2)
 - ⚙️ Direct serial communication at 57600 baud
 - 📉 Double-buffered chart rendering using GDI for smooth plotting
 - 🧠 Visual distinction between CH1 and CH2 with labeled axes
@@ -15,7 +15,7 @@
 ## 🧪 Requirements
 
 - Windows (tested on Windows 10/11)
-- Olimex EEG-SMT device connected via USB
+- [Olimex OpenEEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) connected via USB
 - Device mapped to `COM3` (can be changed in source code)
 - Visual Studio (or any C compiler for Windows)
 - FTDI VCP driver installed: [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
@@ -23,7 +23,7 @@
 ## 🧭 Getting Started
 
 1. Build the application in Visual Studio or using your preferred build setup.
-2. Connect your EEG-SMT device via USB and ensure it appears as `COM3`.
+2. Connect your OpenEEG-SMT device via USB and ensure it appears as `COM3`.
 3. Run the application. The EEG waveform will update in real time.
 4. Optionally place a `help.chm` file in the application folder to enable Help → Contents.
 

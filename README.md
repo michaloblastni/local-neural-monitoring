@@ -20,7 +20,7 @@
 ## 🧪 Requirements
 
 - Windows (tested on Windows 10/11)
-- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) connected via USB
+- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware) connected via USB
 - Device mapped to `COM3` (can be changed in source code)
 - FTDI VCP driver installed: [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
 

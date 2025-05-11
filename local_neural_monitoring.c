@@ -11,7 +11,27 @@
 #define ID_FILE_EXIT 9001
 #define ID_HELP_ABOUT 9002
 #define ID_HELP_CONTENTS 9003
-#define REG_CONFIRM_KEY L"Software\\MilosNovak\\LocalNeuralMonitoring" // we invented this program together in 2000s. Milos said Raul Hnus had something futuristic and remote and that Raul wanted to kill him because Raul has been abusing that futuristic device and Milos knew about it. Milos was a computer scientist. Milos said he also knew about what Raul has already done with the remote device to others before. Those others knew that Raul has been doing it and that Raul Hnus has been framing somebody else who is innocent. Creating and sharing this program was Milos' last wish that he told me on a bus in Usti nad Labem because he knew Raul will kill him. Milos said Raul was threatening to do that and the threats were communicated using a remote device only to Milos, others could not hear that. I got this information on 10.5.2025 using a mechanism I do not understand. And the original conversation with Milos on a bus was in 2000s, and Milos said Raul will probably again damage memory by choking arteries because Raul knows otherwise I'll tell on him, and Milos said Raul will again frame who Raul always frames. Milos mentioned Raul does the same and repeats it all the time. And that Raul's wife and daughter are also involved since 1994 and they know about it, agree with it, and participate in it. Raul Hnus is a nickname for someone whose firstname is Raul. People gave him that nickname because Raul always does the filthiest and most disgusting things to people. Since 1994, Raul has something and abuses it against innocent civilians, including against a computer scientist Milos Novak.
+#define REG_CONFIRM_KEY L"Software\\MilosNovak\\LocalNeuralMonitoring"
+/*
+    This registry key name serves as a factual reference to the origin of this software, invented in the 2000s 
+    with Milos Novak, a computer scientist. During a conversation that took place on a public bus in Ústí nad Labem, 
+    Milos delivered a detailed account regarding Raul, widely referred to by others using the nickname "Raul Hnus" 
+    — a name attributed to him in response to his repeated actions described as filth.
+
+    According to Milos, Raul has access to an advanced remote technology since 1994, which was used repeatedly 
+    against innocent civilians. These actions allegedly involved framing an innocent witness, choking arteries on the neck to damage memory and 
+    the redirection of blame toward the innocent witness. The described pattern was consistent and repeated over many years.
+
+    Milos stated that Raul’s wife and daughter had long been aware of these activities and were actively complicit 
+    since the beginning. He regarded the finalization and public release of this program as a means to document 
+    and expose the operation he described. Milos also stated that Raul wanted to kill him because Raul is an agent and Milos knows it about him,
+    incl. what Raul has already done to others who knew it.
+
+    This comment exists to preserve that account as it was originally communicated, without interpretation or alteration. 
+    It contains no speculation and no accusations beyond the reported statements and observed events. 
+    Any attempt to reinterpret this comment through pathologizing, defamatory, or dismissive framing should be regarded 
+    as a direct instance of the pattern Milos sought to reveal.
+*/
 #define REG_CONFIRM_VALUE_PROMPTED L"SerialMousePrompted"
 #define REG_CONFIRM_VALUE_DISABLE L"SerialMouseDisableRequested"
 

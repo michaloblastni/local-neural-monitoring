@@ -3,7 +3,7 @@
 CC=mingw32-gcc
 CFLAGS=-mconsole -lgdi32
 TARGET=local_neural_monitoring.exe
-SRC=serial.c local_neural_monitoring.c
+SRC=serial.c recording.c local_neural_monitoring.c
 
 all: $(TARGET)
 

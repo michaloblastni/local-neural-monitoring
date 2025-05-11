@@ -7,19 +7,21 @@
 #include <shlobj.h>
 #include <stdio.h>
 #include "serial.h"
+#include "recording.h"
 
 #define MAX_POINTS 500
 #define ID_FILE_EXIT 9001
 #define ID_HELP_ABOUT 9002
 #define ID_HELP_CONTENTS 9003
+#define ID_FILE_START_RECORDING 9004
+#define ID_FILE_STOP_RECORDING 9005
 
-float data[MAX_POINTS][2];  // data[i][0] = CH1, data[i][1] = CH2
+float data[MAX_POINTS][2];
 int data_index = 0;
 HANDLE hSerial;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
-// Open serial port COM3
 int init_serial(const char* port) {
     hSerial = CreateFileA(port, GENERIC_READ, 0, NULL, OPEN_EXISTING, 0, NULL);
     if (hSerial == INVALID_HANDLE_VALUE) return 0;
@@ -39,7 +41,6 @@ int init_serial(const char* port) {
 
 DWORD WINAPI SerialThread(LPVOID lpParam) {
     static int last_counter = -1;
-
     while (1) {
         unsigned char packet[17];
         DWORD bytesRead, totalRead = 0;
@@ -79,9 +80,9 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
         data[data_index][1] = ch2;
         data_index = (data_index + 1) % MAX_POINTS;
 
+        push_sample(ch1, ch2);
         InvalidateRect((HWND)lpParam, NULL, FALSE);
     }
-
     return 0;
 }
 
@@ -179,7 +180,6 @@ void draw_plot(HDC hdc, RECT* rect) {
     }
 }
 
-// Entry point
 int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdShow) {
     const char CLASS_NAME[] = "EEGWindow";
     WNDCLASS wc = { 0 };
@@ -197,25 +197,23 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
         MessageBox(hwnd, "Failed to open COM3", "Error", MB_OK);
         return 0;
     }
-    
-    // Add menu
+
     HMENU hMenuBar = CreateMenu();
     HMENU hFile = CreatePopupMenu();
     HMENU hHelp = CreatePopupMenu();
 
+    AppendMenu(hFile, MF_STRING, ID_FILE_START_RECORDING, "Start Recording");
+    AppendMenu(hFile, MF_STRING, ID_FILE_STOP_RECORDING, "Stop Recording");
     AppendMenu(hFile, MF_STRING, ID_FILE_EXIT, "Exit");
     AppendMenu(hHelp, MF_STRING, ID_HELP_CONTENTS, "Contents");
-    AppendMenu(hHelp, MF_STRING, ID_HELP_ABOUT, "About");   
-
+    AppendMenu(hHelp, MF_STRING, ID_HELP_ABOUT, "About");
     AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFile, "File");
     AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, "Help");
-
     SetMenu(hwnd, hMenuBar);
 
-    SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED); // avoid the screensaver while EEG viewer is running
+    SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);
-
 
     SetConsoleOutputCP(CP_UTF8);
     CreateThread(NULL, 0, SerialThread, hwnd, 0, NULL);
@@ -230,58 +228,57 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
     return (int)msg.wParam;
 }
 
-// Window procedure
 LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
     switch (msg) {
     case WM_PAINT: {
         PAINTSTRUCT ps;
         HDC hdc = BeginPaint(hwnd, &ps);
-        
         RECT rect;
         GetClientRect(hwnd, &rect);
-
-        // Create a memory DC for double buffering
         HDC memDC = CreateCompatibleDC(hdc);
         HBITMAP memBM = CreateCompatibleBitmap(hdc, rect.right, rect.bottom);
         HGDIOBJ oldBM = SelectObject(memDC, memBM);
-
-        // Draw off-screen
         draw_plot(memDC, &rect);
-
-        // Copy to screen
         BitBlt(hdc, 0, 0, rect.right, rect.bottom, memDC, 0, 0, SRCCOPY);
-
-        // Clean up
         SelectObject(memDC, oldBM);
         DeleteObject(memBM);
         DeleteDC(memDC);
-
         EndPaint(hwnd, &ps);
         break;
     }
-
     case WM_DESTROY:
         PostQuitMessage(0);
         break;
     case WM_COMMAND:
         switch (LOWORD(wParam)) {
-            case ID_FILE_EXIT:
-                PostQuitMessage(0);
-                break;
-            case ID_HELP_ABOUT:
-                MessageBoxW(hwnd,
-                    L"Local Neural Monitoring v 0.0.1\n"
-                    L"Released under the MIT License.\n"
-                    L"Author: Michal Oblastni\n"
-                    L"https://github.com/michaloblastni",
-                    L"About", MB_OK | MB_ICONINFORMATION);
-                break;
-            case ID_HELP_CONTENTS:
-                ShellExecuteA(NULL, "open", "help.chm", NULL, NULL, SW_SHOWNORMAL);
+        case ID_FILE_EXIT:
+            PostQuitMessage(0);
+            break;
+        case ID_FILE_START_RECORDING:
+            if (!is_recording()) {
+                init_recording();
+                MessageBox(hwnd, "Recording into eeg_data.gdf has started.", "Info", MB_OK);
+            }
+            break;
+        case ID_FILE_STOP_RECORDING:
+            if (is_recording()) {
+                stop_recording();
+                MessageBox(hwnd, "Recording has stopped. Check the eeg_data.gdf file.", "Info", MB_OK);
+            }
+            break;
+        case ID_HELP_ABOUT:
+            MessageBoxW(hwnd,
+                L"Local Neural Monitoring v 0.0.2\n"
+                L"Released under the MIT License.\n"
+                L"Author: Michal Oblastni\n"
+                L"https://github.com/michaloblastni",
+                L"About", MB_OK | MB_ICONINFORMATION);
+            break;
+        case ID_HELP_CONTENTS:
+            ShellExecuteA(NULL, "open", "help.chm", NULL, NULL, SW_SHOWNORMAL);
             break;
         }
-    break;
-
+        break;
     default:
         return DefWindowProc(hwnd, msg, wParam, lParam);
     }

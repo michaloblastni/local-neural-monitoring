@@ -4,7 +4,8 @@
 
 ![Local Neural Monitoring](local_neural_monitoring.png)
 
-## 🗃️ Release
+## 🗃️ Releases
+- [0.1.0](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.1.0)
 - [0.0.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
 
 ## ✅ Features

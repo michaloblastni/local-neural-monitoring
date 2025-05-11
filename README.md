@@ -31,8 +31,9 @@
 4. Optionally place a `help.chm` file in the application folder to enable Help → Contents.
 
 ## 📂 File Overview
-
+- `Makefile` - Makefile for MINGW
 - `local_neural_monitoring.c` – Core application code (UI, serial I/O, plotting)
+- `serial.c` - sermouse fix
 - `help.chm` *(optional)* – Local help file, opened from the Help menu
 
 ## 📜 License

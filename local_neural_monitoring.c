@@ -6,181 +6,18 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <stdio.h>
+#include "serial.h"
 
 #define MAX_POINTS 500
 #define ID_FILE_EXIT 9001
 #define ID_HELP_ABOUT 9002
 #define ID_HELP_CONTENTS 9003
-#define REG_CONFIRM_KEY L"Software\\MilosNovak\\LocalNeuralMonitoring"
-/*
-    This registry key name serves as a factual reference to the origin of this software, invented in the 2000s 
-    with Milos Novak, a computer scientist. During a conversation that took place on a public bus in Ústí nad Labem, 
-    Milos delivered a detailed account regarding Raul, widely referred to by others using the nickname "Raul Hnus" 
-    — a name attributed to him in response to his repeated actions described as filth.
-
-    According to Milos, Raul has access to an advanced remote technology since 1994, which was used repeatedly 
-    against innocent civilians. These actions allegedly involved framing an innocent witness, choking arteries on the neck to damage memory and 
-    the redirection of blame toward the innocent witness. The described pattern was consistent and repeated over many years.
-
-    Milos stated that Raul’s wife and daughter had long been aware of these activities and were actively complicit 
-    since the beginning. He regarded the finalization and public release of this program as a means to document 
-    and expose the operation he described. Milos also stated that Raul wanted to kill him because Raul is an agent and Milos knows it about him,
-    incl. what Raul has already done to others who knew it.
-
-    This comment exists to preserve that account as it was originally communicated, without interpretation or alteration. 
-    It contains no speculation and no accusations beyond the reported statements and observed events. 
-    Any attempt to reinterpret this comment through pathologizing, defamatory, or dismissive framing should be regarded 
-    as a direct instance of the pattern Milos sought to reveal.
-*/
-#define REG_CONFIRM_VALUE_PROMPTED L"SerialMousePrompted"
-#define REG_CONFIRM_VALUE_DISABLE L"SerialMouseDisableRequested"
 
 float data[MAX_POINTS][2];  // data[i][0] = CH1, data[i][1] = CH2
 int data_index = 0;
 HANDLE hSerial;
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
-
-BOOL IsRunningAsAdmin() {
-    BOOL isAdmin = FALSE;
-    PSID adminGroup = NULL;
-    SID_IDENTIFIER_AUTHORITY ntAuthority = SECURITY_NT_AUTHORITY;
-    if (AllocateAndInitializeSid(&ntAuthority, 2,
-        SECURITY_BUILTIN_DOMAIN_RID,
-        DOMAIN_ALIAS_RID_ADMINS,
-        0, 0, 0, 0, 0, 0,
-        &adminGroup)) {
-
-        CheckTokenMembership(NULL, adminGroup, &isAdmin);
-        FreeSid(adminGroup);
-    }
-    return isAdmin;
-}
-
-void RelaunchAsAdmin() {
-    wchar_t exePath[MAX_PATH];
-    GetModuleFileNameW(NULL, exePath, MAX_PATH);
-
-    SHELLEXECUTEINFOW sei = { sizeof(sei) };
-    sei.lpVerb = L"runas";
-    sei.lpFile = exePath;
-    sei.nShow = SW_NORMAL;
-
-    if (!ShellExecuteExW(&sei)) {
-        MessageBoxW(NULL,
-            L"Administrator privileges are required to change system settings.",
-            L"Permission Denied", MB_OK | MB_ICONERROR);
-        ExitProcess(1);
-    }
-    ExitProcess(0);
-}
-
-BOOL WasPromptAlreadyShown() {
-    HKEY hKey;
-    DWORD value = 0, size = sizeof(DWORD);
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, REG_CONFIRM_KEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        if (RegQueryValueExW(hKey, REG_CONFIRM_VALUE_PROMPTED, NULL, NULL, (LPBYTE)&value, &size) == ERROR_SUCCESS && value == 1) {
-            RegCloseKey(hKey);
-            return TRUE;
-        }
-        RegCloseKey(hKey);
-    }
-    return FALSE;
-}
-
-BOOL WasDisableRequested() {
-    HKEY hKey;
-    DWORD value = 0, size = sizeof(DWORD);
-    if (RegOpenKeyExW(HKEY_CURRENT_USER, REG_CONFIRM_KEY, 0, KEY_READ, &hKey) == ERROR_SUCCESS) {
-        if (RegQueryValueExW(hKey, REG_CONFIRM_VALUE_DISABLE, NULL, NULL, (LPBYTE)&value, &size) == ERROR_SUCCESS && value == 1) {
-            RegCloseKey(hKey);
-            return TRUE;
-        }
-        RegCloseKey(hKey);
-    }
-    return FALSE;
-}
-
-void MarkPromptAsShown(BOOL disableRequested) {
-    HKEY hKey;
-    if (RegCreateKeyExW(HKEY_CURRENT_USER, REG_CONFIRM_KEY, 0, NULL, 0, KEY_WRITE, NULL, &hKey, NULL) == ERROR_SUCCESS) {
-        DWORD prompted = 1;
-        RegSetValueExW(hKey, REG_CONFIRM_VALUE_PROMPTED, 0, REG_DWORD, (const BYTE*)&prompted, sizeof(prompted));
-        DWORD disable = disableRequested ? 1 : 0;
-        RegSetValueExW(hKey, REG_CONFIRM_VALUE_DISABLE, 0, REG_DWORD, (const BYTE*)&disable, sizeof(disable));
-        RegCloseKey(hKey);
-    }
-}
-
-void DisableSerialMouseIfRequested() {
-    if (!WasDisableRequested()) return;
-
-    HKEY hKey;
-    if (RegOpenKeyExW(HKEY_LOCAL_MACHINE,
-        L"SYSTEM\\CurrentControlSet\\Services\\sermouse", 0,
-        KEY_SET_VALUE, &hKey) == ERROR_SUCCESS) {
-
-        DWORD newValue = 4;
-        if (RegSetValueExW(hKey, L"Start", 0, REG_DWORD,
-            (const BYTE*)&newValue, sizeof(newValue)) == ERROR_SUCCESS) {
-
-            MessageBoxW(NULL,
-                L"Serial mouse driver has been disabled.\n\n"
-                L"Please restart your computer for the change to take effect.",
-                L"Change Applied", MB_OK | MB_ICONINFORMATION);
-            ExitProcess(0);
-        } else {
-            MessageBoxW(NULL,
-                L"Failed to change the serial mouse setting.",
-                L"Error", MB_OK | MB_ICONERROR);
-            ExitProcess(1);
-        }
-        RegCloseKey(hKey);
-    }
-}
-
-void CheckAndDisableSerialMouse() {
-    if (WasPromptAlreadyShown()) {
-        if (WasDisableRequested() && IsRunningAsAdmin()) {
-            DisableSerialMouseIfRequested();
-        }
-        return;
-    }
-
-    HKEY hKey;
-    DWORD startValue = 0;
-    DWORD dataSize = sizeof(DWORD);
-    LONG result = RegOpenKeyExW(HKEY_LOCAL_MACHINE,
-        L"SYSTEM\\CurrentControlSet\\Services\\sermouse", 0,
-        KEY_QUERY_VALUE, &hKey);
-
-    if (result != ERROR_SUCCESS) return;
-
-    result = RegQueryValueExW(hKey, L"Start", NULL, NULL,
-        (LPBYTE)&startValue, &dataSize);
-
-    RegCloseKey(hKey);
-
-    if (result == ERROR_SUCCESS && startValue != 4) {
-        int response = MessageBoxW(NULL,
-            L"The serial mouse driver is currently enabled.\n\n"
-            L"This can interfere with the EEG-SMT device.\n\n"
-            L"Are you using a serial mouse?\n\n"
-            L"If you are unsure, choose 'No' (recommended).",
-            L"Disable Serial Mouse?", MB_YESNO | MB_ICONQUESTION);
-
-        BOOL disable = (response == IDNO);
-        MarkPromptAsShown(disable);
-
-        if (disable) {
-            if (!IsRunningAsAdmin()) {
-                RelaunchAsAdmin();
-            } else {
-                DisableSerialMouseIfRequested();
-            }
-        }
-    }
-}
 
 // Open serial port COM3
 int init_serial(const char* port) {

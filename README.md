@@ -20,7 +20,7 @@
 ## 🧪 Requirements
 
 - Windows (tested on Windows 10/11)
-- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware) connected via USB, 4x [EEG-AE](https://www.olimex.com/Products/EEG/Electrodes/EEG-AE/open-source-hardware), 1x [EEG-PE](https://www.olimex.com/Products/EEG/Electrodes/EEG-PE/open-source-hardware), 1x [CABLE-USB-A-B-1.8M](https://www.olimex.com/Products/Components/Cables/USB/CABLE-USB-A-B-1.8M/) **The EEG hardware costs only 144 EUR**.
+- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware) connected via USB, 4x [EEG-AE](https://www.olimex.com/Products/EEG/Electrodes/EEG-AE/open-source-hardware), 1x [EEG-PE](https://www.olimex.com/Products/EEG/Electrodes/EEG-PE/open-source-hardware), 1x [CABLE-USB-A-B-1.8M](https://www.olimex.com/Products/Components/Cables/USB/CABLE-USB-A-B-1.8M/) **The EEG hardware costs only 143 EUR**.
 - FTDI VCP driver installed (Windows Universal): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm) for the device mapped to `COM3` (can be changed in source code)
 
 ## 🧭 Getting Started

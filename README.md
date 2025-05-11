@@ -1,4 +1,4 @@
-# Local Neural Monitoring
+# Local Neural Monitoring 0.0.2
 
 **Local Neural Monitoring** is a native Windows application written in C for real-time EEG signal visualization. It is designed to interface with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) over a serial connection (COM3) and display two EEG channels with a smooth waveform plot. The device is physically connected to a USB port but simply appears as COM3.
 
@@ -14,6 +14,7 @@
 - 📉 Double-buffered chart rendering using GDI for smooth plotting
 - 🧠 Visual distinction between CH1 and CH2 with labeled axes
 - 🧼 Handles dropped packets and reports counter gaps
+- 💾 Optional real-time EEG recording (GDF format)
 - 🧰 Startup check to optionally disable Windows serial mouse driver if active
 - 🧾 Help menu with “About” and optional `.chm` file support
 

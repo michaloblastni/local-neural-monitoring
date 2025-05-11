@@ -35,6 +35,7 @@
 - `Makefile` - Makefile for MINGW
 - `local_neural_monitoring.c` – Core application code (UI, serial I/O, plotting)
 - `serial.c` - sermouse fix
+- `recording.c` - EEG data recording (EDF file format)
 - `help.chm` *(optional)* – Local help file, opened from the Help menu
 
 ## 📜 License

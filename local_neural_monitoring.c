@@ -268,7 +268,7 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
             break;
         case ID_HELP_ABOUT:
             MessageBoxW(hwnd,
-                L"Local Neural Monitoring v 0.0.2\n"
+                L"Local Neural Monitoring v 0.2.0\n"
                 L"Released under the MIT License.\n"
                 L"Author: Michal Oblastni\n"
                 L"https://github.com/michaloblastni",

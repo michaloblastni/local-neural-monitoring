@@ -257,18 +257,18 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
         case ID_FILE_START_RECORDING:
             if (!is_recording()) {
                 init_recording();
-                MessageBox(hwnd, "Recording into eeg_data.gdf has started.", "Info", MB_OK);
+                MessageBox(hwnd, "Recording into eeg_data.csv has started.", "Info", MB_OK);
             }
             break;
         case ID_FILE_STOP_RECORDING:
             if (is_recording()) {
                 stop_recording();
-                MessageBox(hwnd, "Recording has stopped. Check the eeg_data.gdf file.", "Info", MB_OK);
+                MessageBox(hwnd, "Recording has stopped. Check the eeg_data.csv file.", "Info", MB_OK);
             }
             break;
         case ID_HELP_ABOUT:
             MessageBoxW(hwnd,
-                L"Local Neural Monitoring v 0.1.0\n"
+                L"Local Neural Monitoring v 0.1.1\n"
                 L"Released under the MIT License.\n"
                 L"Author: Michal Oblastni\n"
                 L"https://github.com/michaloblastni",

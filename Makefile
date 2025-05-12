@@ -1,7 +1,7 @@
 # Makefile for building local_neural_monitoring.exe with MinGW
 
 CC=mingw32-gcc
-CFLAGS=-mconsole -lgdi32
+CFLAGS=-mconsole -lgdi32 -lkernel32
 TARGET=local_neural_monitoring.exe
 SRC=serial.c recording.c local_neural_monitoring.c
 

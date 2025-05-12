@@ -38,4 +38,4 @@ void CheckAndDisableSerialMouse(void);
 }
 #endif
 
-#endif // CHECK_AND_DISABLE_SERIAL_MOUSE_H
+#endif // CHECK_AND_DISABLE_SERIAL

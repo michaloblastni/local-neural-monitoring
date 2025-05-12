@@ -15,7 +15,7 @@
 - 📉 Double-buffered chart rendering using GDI for smooth plotting
 - 🧠 Visual distinction between CH1 and CH2 with labeled axes
 - 🧼 Handles dropped packets and reports counter gaps
-- 💾 Optional real-time EEG recording (GDF format)
+- 💾 Optional real-time EEG recording (CSV format)
 - 🧰 Startup check to optionally disable Windows serial mouse driver if active
 - 🧾 Help menu with “About” and optional `.chm` file support
 

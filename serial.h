@@ -1,5 +1,5 @@
-#ifndef CHECK_AND_DISABLE_SERIAL
-#define CHECK_AND_DISABLE_SERIAL
+#ifndef CHECK_AND_STOP_SERIAL
+#define CHECK_AND_STOP_SERIAL
 
 #include <windows.h>
 
@@ -38,4 +38,4 @@ void CheckAndDisableSerialMouse(void);
 }
 #endif
 
-#endif // CHECK_AND_DISABLE_SERIAL
+#endif // CHECK_AND_STOP_SERIAL

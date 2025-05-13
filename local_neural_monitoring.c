@@ -6,19 +6,51 @@
 #include <shellapi.h>
 #include <shlobj.h>
 #include <stdio.h>
+#include <string.h>
+#include <complex.h>
 #include "serial.h"
 #include "recording.h"
 
-#define MAX_POINTS 500
+#define MAX_POINTS 512
 #define ID_FILE_EXIT 9001
 #define ID_HELP_ABOUT 9002
 #define ID_HELP_CONTENTS 9003
 #define ID_FILE_START_RECORDING 9004
 #define ID_FILE_STOP_RECORDING 9005
+#define ID_BAND_ALL   9100
+#define ID_BAND_DELTA 9101
+#define ID_BAND_THETA 9102
+#define ID_BAND_ALPHA 9103
+#define ID_BAND_BETA  9104
+#define ID_BAND_GAMMA 9105
+#define SAMPLE_RATE 256
 
 float data[MAX_POINTS][2];
+float filtered_data[MAX_POINTS][2];
 int data_index = 0;
 HANDLE hSerial;
+
+typedef enum {
+    BAND_ALL,
+    BAND_DELTA,
+    BAND_THETA,
+    BAND_ALPHA,
+    BAND_BETA,
+    BAND_GAMMA
+} FrequencyBand;
+
+FrequencyBand current_band = BAND_ALL; // Default
+
+void get_band_limits(FrequencyBand band, float* low_hz, float* high_hz) {
+    switch (band) {
+        case BAND_DELTA: *low_hz = 0.5f; *high_hz = 4.0f; break;
+        case BAND_THETA: *low_hz = 4.0f; *high_hz = 8.0f; break;
+        case BAND_ALPHA: *low_hz = 8.0f; *high_hz = 13.0f; break;
+        case BAND_BETA:  *low_hz = 13.0f; *high_hz = 30.0f; break;
+        case BAND_GAMMA: *low_hz = 30.0f; *high_hz = 100.0f; break;
+        default:         *low_hz = 0.0f; *high_hz = SAMPLE_RATE / 2.0f; break;
+    }
+}
 
 LRESULT CALLBACK WndProc(HWND, UINT, WPARAM, LPARAM);
 
@@ -73,7 +105,7 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
         uint16_t ch1 = packet[4] << 8 | packet[5];
         uint16_t ch2 = packet[6] << 8 | packet[7];
 
-        wprintf(L"CH1: %d, CH2: %d [#%d]\n", ch1, ch2, counter);
+        //wprintf(L"CH1: %d, CH2: %d [#%d]\n", ch1, ch2, counter);
         fflush(stdout);
 
         data[data_index][0] = ch1;
@@ -86,7 +118,64 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
     return 0;
 }
 
+// Compute FFT, apply band-pass (or no filter if full range), and IFFT to fill filtered_data[ch]
+void compute_band_filtered(int ch, float low_hz, float high_hz) {
+    int N = MAX_POINTS;
+    complex float x[MAX_POINTS];
+    complex float X[MAX_POINTS] = {0};
+    complex float Y[MAX_POINTS] = {0};
+
+    // Remove DC offset
+    float dc = 0;
+    for (int i = 0; i < N; ++i) {
+        int idx = (data_index + i) % N;
+        dc += data[idx][ch];
+    }
+    dc /= N;
+
+    for (int i = 0; i < N; ++i) {
+        int idx = (data_index + i) % N;
+        x[i] = data[idx][ch] - dc;
+    }
+
+    // Forward DFT
+    for (int k = 0; k < N; ++k) {
+        for (int n = 0; n < N; ++n) {
+            float angle = -2.0f * (float)M_PI * k * n / N;
+            X[k] += x[n] * cexpf(I * angle);
+        }
+    }
+
+    // Band-pass with Hermitian symmetry
+    float freq_res = (float)SAMPLE_RATE / N;
+    int half = N / 2;
+    for (int k = 0; k <= half; ++k) {
+        float freq = k * freq_res;
+        if (freq >= low_hz && freq <= high_hz) {
+            Y[k] = X[k];
+            if (k != 0 && k != half) {
+                Y[N - k] = conjf(X[N - k]);
+            }
+        }
+    }
+
+    // Inverse DFT
+    for (int n = 0; n < N; ++n) {
+        complex float sum = 0;
+        for (int k = 0; k < N; ++k) {
+            float angle = 2.0f * (float)M_PI * k * n / N;
+            sum += Y[k] * cexpf(I * angle);
+        }
+        filtered_data[n][ch] = crealf(sum) / N + dc;
+    }
+}
+
 void draw_plot(HDC hdc, RECT* rect) {
+    float low_hz = 0.0f, high_hz = 128.0f;
+    get_band_limits(current_band, &low_hz, &high_hz);
+    compute_band_filtered(0, low_hz, high_hz);
+    compute_band_filtered(1, low_hz, high_hz);
+
     HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
     FillRect(hdc, rect, brush);
     DeleteObject(brush);
@@ -142,8 +231,15 @@ void draw_plot(HDC hdc, RECT* rect) {
             int idx1 = (data_index + i) % MAX_POINTS;
             int idx2 = (data_index + i + 1) % MAX_POINTS;
 
-            float v1 = data[idx1][ch];
-            float v2 = data[idx2][ch];
+            float v1;
+            float v2;
+            if (current_band == BAND_ALL) {
+                v1 = data[idx1][ch];
+                v2 = data[idx2][ch];
+            } else {
+                v1 = filtered_data[idx1][ch];
+                v2 = filtered_data[idx2][ch];
+            }
 
             float norm1 = (v1 - roundedMin) / displayRange;
             float norm2 = (v2 - roundedMin) / displayRange;
@@ -199,17 +295,32 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
     }
 
     HMENU hMenuBar = CreateMenu();
-    HMENU hFile = CreatePopupMenu();
-    HMENU hHelp = CreatePopupMenu();
 
+    HMENU hFile = CreatePopupMenu();
     AppendMenu(hFile, MF_STRING, ID_FILE_START_RECORDING, "Start Recording");
     AppendMenu(hFile, MF_STRING, ID_FILE_STOP_RECORDING, "Stop Recording");
     AppendMenu(hFile, MF_STRING, ID_FILE_EXIT, "Exit");
+
+    HMENU hBand = CreatePopupMenu();
+    AppendMenu(hBand, MF_STRING, ID_BAND_ALL,   "All");
+    AppendMenu(hBand, MF_STRING, ID_BAND_DELTA, "Delta (0.5-4 Hz)");
+    AppendMenu(hBand, MF_STRING, ID_BAND_THETA, "Theta (4-8 Hz)");
+    AppendMenu(hBand, MF_STRING, ID_BAND_ALPHA, "Alpha (8-13 Hz)");
+    AppendMenu(hBand, MF_STRING, ID_BAND_BETA,  "Beta (13-30 Hz)");
+    AppendMenu(hBand, MF_STRING, ID_BAND_GAMMA, "Gamma (30-100 Hz)");
+
+    HMENU hHelp = CreatePopupMenu();
     AppendMenu(hHelp, MF_STRING, ID_HELP_CONTENTS, "Contents");
     AppendMenu(hHelp, MF_STRING, ID_HELP_ABOUT, "About");
+
     AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hFile, "File");
+    AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hBand, "Band");
     AppendMenu(hMenuBar, MF_POPUP, (UINT_PTR)hHelp, "Help");
     SetMenu(hwnd, hMenuBar);
+
+    for (int i = ID_BAND_ALL; i <= ID_BAND_GAMMA; ++i) {
+        CheckMenuItem(hMenuBar, i, MF_BYCOMMAND | ((i == (ID_BAND_ALL + current_band)) ? MF_CHECKED : MF_UNCHECKED)); // initialize the active menu item
+    }
 
     SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
     ShowWindow(hwnd, nCmdShow);
@@ -266,9 +377,21 @@ LRESULT CALLBACK WndProc(HWND hwnd, UINT msg, WPARAM wParam, LPARAM lParam) {
                 MessageBox(hwnd, "Recording has stopped. Check the eeg_data.csv file.", "Info", MB_OK);
             }
             break;
+        case ID_BAND_ALL:
+        case ID_BAND_DELTA:
+        case ID_BAND_THETA:
+        case ID_BAND_ALPHA:
+        case ID_BAND_BETA:
+        case ID_BAND_GAMMA:
+            current_band = (FrequencyBand)(LOWORD(wParam) - ID_BAND_ALL);
+            for (int i = ID_BAND_ALL; i <= ID_BAND_GAMMA; ++i) {
+                CheckMenuItem(GetMenu(hwnd), i, MF_BYCOMMAND | ((i == LOWORD(wParam)) ? MF_CHECKED : MF_UNCHECKED));
+            }
+            break;
+
         case ID_HELP_ABOUT:
             MessageBoxW(hwnd,
-                L"Local Neural Monitoring v 0.1.1\n"
+                L"Local Neural Monitoring v 0.2.0\n"
                 L"Released under the MIT License.\n"
                 L"Author: Michal Oblastni\n"
                 L"https://github.com/michaloblastni",

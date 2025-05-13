@@ -1,10 +1,11 @@
-# Local Neural Monitoring 0.1.1
+# Local Neural Monitoring 0.2.0
 
 **Local Neural Monitoring** is a native Windows application written in C for real-time EEG signal visualization and recording. It is designed to interface with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) over a serial connection (COM3) and display two EEG channels with a smooth waveform plot. The device is physically connected to a USB port but simply appears as COM3.
 
 ![Local Neural Monitoring](local_neural_monitoring.png)
 
 ## 🗃️ Releases
+- [0.2.0](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.2.0)
 - [0.1.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.1.1)
 - [0.0.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
 
@@ -16,6 +17,7 @@
 - 🧠 Visual distinction between CH1 and CH2 with labeled axes
 - 🧼 Handles dropped packets and reports counter gaps
 - 💾 Optional real-time EEG recording (CSV format)
+- 📊 Band Filtering (Alpha, Beta, Gamma, Delta, Theta)
 - 🧰 Startup check to optionally disable Windows serial mouse driver if active
 - 🧾 Help menu with “About” and optional `.chm` file support
 
@@ -34,7 +36,7 @@
 
 ## 📂 File Overview
 - `Makefile` - Makefile for MINGW
-- `local_neural_monitoring.c` – Core application code (UI, serial I/O, plotting)
+- `local_neural_monitoring.c` – Core application code (UI, serial I/O, band filtering, plotting)
 - `serial.c` - stopping serial
 - `recording.c` - EEG data recording (CSV file format)
 - `help.chm` *(optional)* – Local help file, opened from the Help menu

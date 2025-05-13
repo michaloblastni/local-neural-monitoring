@@ -105,7 +105,7 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
         uint16_t ch1 = packet[4] << 8 | packet[5];
         uint16_t ch2 = packet[6] << 8 | packet[7];
 
-        //wprintf(L"CH1: %d, CH2: %d [#%d]\n", ch1, ch2, counter);
+        wprintf(L"CH1: %d, CH2: %d [#%d]\n", ch1, ch2, counter);
         fflush(stdout);
 
         data[data_index][0] = ch1;

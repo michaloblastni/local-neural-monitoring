@@ -30,7 +30,7 @@
 - 4x Active Sensor [EEG-AE](https://www.olimex.com/Products/EEG/Electrodes/EEG-AE/open-source-hardware)
 - 1x Passive Sensor [EEG-PE](https://www.olimex.com/Products/EEG/Electrodes/EEG-PE/open-source-hardware)
 - 1x Usb Cable [CABLE-USB-A-B-1.8M](https://www.olimex.com/Products/Components/Cables/USB/CABLE-USB-A-B-1.8M/)
-- A small driver so your computer can recognize the device (Windows Universal): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
+- A small driver so your computer can recognize the device (Windows Universal X64): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
 
 Total hardware cost: **143 EUR**
   

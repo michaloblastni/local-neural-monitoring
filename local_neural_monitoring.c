@@ -170,11 +170,13 @@ void compute_band_filtered(int ch, float low_hz, float high_hz) {
     }
 }
 
-void draw_plot(HDC hdc, RECT* rect) {
-    float low_hz = 0.0f, high_hz = 128.0f;
-    get_band_limits(current_band, &low_hz, &high_hz);
-    compute_band_filtered(0, low_hz, high_hz);
-    compute_band_filtered(1, low_hz, high_hz);
+void draw_plot(HDC hdc, RECT* rect) {    
+    if (current_band != BAND_ALL) {
+        float low_hz = 0.0f, high_hz = 128.0f;
+        get_band_limits(current_band, &low_hz, &high_hz);
+        compute_band_filtered(0, low_hz, high_hz);
+        compute_band_filtered(1, low_hz, high_hz);
+    }
 
     HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
     FillRect(hdc, rect, brush);

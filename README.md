@@ -1,6 +1,6 @@
 # Local Neural Monitoring 0.2.0
 
-**Local Neural Monitoring** is a native Windows application written in C for real-time EEG signal visualization and recording. It is designed to interface with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/) over a serial connection (COM3) and display two EEG channels with a smooth waveform plot. The device is physically connected to a USB port but simply appears as COM3.
+**Local Neural Monitoring** is a simple Windows application that monitors and records your neural activity at home. It works with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/), which you plug into your computer with a USB cable. The application shows two channels with your neural activity, allows you to filter the alpha waves, beta waves, and other. You can also record your neural activity with it and later analyze it using Jupyter notebook to investigate something that you want to know.
 
 ![Local Neural Monitoring](local_neural_monitoring.png)
 
@@ -9,32 +9,40 @@
 - [0.1.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.1.1)
 - [0.0.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
 
-## ✅ Features
+## ✅ What it does
 
-- 📡 Real-time visualization of EEG data from Olimex OpenEEG-SMT (CH1 and CH2)
+- 📡 Neural monitoring from Olimex EEG-SMT (CH1 and CH2)
+- 📊 Lets you focus on specific brainwave types (Alpha, Beta, Gamma, Delta, Theta)
+- 💾 Can save your neural activity to a file (CSV format)
+- 🧾 Help menu for complete beginners who are new to neural monitoring
 - ⚙️ Direct serial communication at 57600 baud
+- 🧰 Startup check to automatically fix the crazy mouse issue
 - 📉 Double-buffered chart rendering using GDI for smooth plotting
 - 🧠 Visual distinction between CH1 and CH2 with labeled axes
 - 🧼 Handles dropped packets and reports counter gaps
-- 💾 Optional real-time EEG recording (CSV format)
-- 📊 Band Filtering (Alpha, Beta, Gamma, Delta, Theta)
-- 🧰 Startup check to optionally disable Windows serial mouse driver if active
-- 🧾 Help menu with “About” and optional `.chm` file support
+
 
 ## 🧪 Requirements
 
-- Windows (tested on Windows 10/11)
-- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware) connected via USB, 4x [EEG-AE](https://www.olimex.com/Products/EEG/Electrodes/EEG-AE/open-source-hardware), 1x [EEG-PE](https://www.olimex.com/Products/EEG/Electrodes/EEG-PE/open-source-hardware), 1x [CABLE-USB-A-B-1.8M](https://www.olimex.com/Products/Components/Cables/USB/CABLE-USB-A-B-1.8M/) **The EEG hardware costs only 143 EUR**.
-- FTDI VCP driver installed (Windows Universal): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm) for the device mapped to `COM3` (can be changed in source code)
+- A Windows 10 or 11 computer
+- The EEG device and accessories:
+- [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware)
+- 4x Active Sensor [EEG-AE](https://www.olimex.com/Products/EEG/Electrodes/EEG-AE/open-source-hardware)
+- 1x Passive Sensor [EEG-PE](https://www.olimex.com/Products/EEG/Electrodes/EEG-PE/open-source-hardware)
+- 1x Usb Cable [CABLE-USB-A-B-1.8M](https://www.olimex.com/Products/Components/Cables/USB/CABLE-USB-A-B-1.8M/)
+- A small driver so your computer can recognize the device (Windows Universal): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
+Total hardware cost: **143 EUR**
+  
+## 🧭 How to start (even if you're not a developer)
 
-## 🧭 Getting Started
+1. Download the .exe from the latest release
+2. Plug the device into a USB port
+3. Run the application and you will see your EEG waveform updated in real time
+4. See Help → Contents to learn the basics
+5. Press File → Start recording / stop recording if you want to record your neural activity into a file
+6. Filter brainwave type using the Band menu if you want to investigate some specific neural activity
 
-1. If you are a developer, build the application using a C compiler for Windows, i.e. [MINGW](https://sourceforge.net/projects/mingw/). Otherwise, use the provided .exe.
-2. Connect your OpenEEG-SMT device via USB and ensure it appears as `COM3`.
-3. Run the application. The EEG waveform will update in real time.
-4. Optionally place a `help.chm` file in the application folder to enable Help → Contents.
-
-## 📂 File Overview
+## 📂 File Overview for developers
 - `Makefile` - Makefile for MINGW
 - `local_neural_monitoring.c` – Core application code (UI, serial I/O, band filtering, plotting)
 - `serial.c` - stopping serial

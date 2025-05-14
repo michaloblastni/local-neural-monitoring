@@ -28,6 +28,7 @@
 float data[MAX_POINTS][2];
 float filtered_data[MAX_POINTS][2];
 int data_index = 0;
+CRITICAL_SECTION cs_filtered_data;
 HANDLE hSerial;
 
 typedef enum {
@@ -118,27 +119,18 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
     return 0;
 }
 
-// Compute FFT, apply band-pass (or no filter if full range), and IFFT to fill filtered_data[ch]
-void compute_band_filtered(int ch, float low_hz, float high_hz) {
+void compute_band_filtered_from(float in[][2], float out[][2], int ch, float low_hz, float high_hz) {
     int N = MAX_POINTS;
     complex float x[MAX_POINTS];
     complex float X[MAX_POINTS] = {0};
     complex float Y[MAX_POINTS] = {0};
 
-    // Remove DC offset
     float dc = 0;
-    for (int i = 0; i < N; ++i) {
-        int idx = (data_index + i) % N;
-        dc += data[idx][ch];
-    }
+    for (int i = 0; i < N; ++i) dc += in[i][ch];
     dc /= N;
 
-    for (int i = 0; i < N; ++i) {
-        int idx = (data_index + i) % N;
-        x[i] = data[idx][ch] - dc;
-    }
+    for (int i = 0; i < N; ++i) x[i] = in[i][ch] - dc;
 
-    // Forward DFT
     for (int k = 0; k < N; ++k) {
         for (int n = 0; n < N; ++n) {
             float angle = -2.0f * (float)M_PI * k * n / N;
@@ -146,38 +138,53 @@ void compute_band_filtered(int ch, float low_hz, float high_hz) {
         }
     }
 
-    // Band-pass with Hermitian symmetry
     float freq_res = (float)SAMPLE_RATE / N;
     int half = N / 2;
     for (int k = 0; k <= half; ++k) {
         float freq = k * freq_res;
         if (freq >= low_hz && freq <= high_hz) {
             Y[k] = X[k];
-            if (k != 0 && k != half) {
-                Y[N - k] = conjf(X[N - k]);
-            }
+            if (k != 0 && k != half) Y[N - k] = conjf(X[N - k]);
         }
     }
 
-    // Inverse DFT
     for (int n = 0; n < N; ++n) {
         complex float sum = 0;
         for (int k = 0; k < N; ++k) {
             float angle = 2.0f * (float)M_PI * k * n / N;
             sum += Y[k] * cexpf(I * angle);
         }
-        filtered_data[n][ch] = crealf(sum) / N + dc;
+        out[n][ch] = crealf(sum) / N + dc;
     }
 }
 
-void draw_plot(HDC hdc, RECT* rect) {    
-    if (current_band != BAND_ALL) {
-        float low_hz = 0.0f, high_hz = 128.0f;
-        get_band_limits(current_band, &low_hz, &high_hz);
-        compute_band_filtered(0, low_hz, high_hz);
-        compute_band_filtered(1, low_hz, high_hz);
-    }
+DWORD WINAPI FilteringThread(LPVOID lpParam) {
+    float local_data[MAX_POINTS][2];
+    float temp_filtered[MAX_POINTS][2];
+    float low_hz = 0.0f, high_hz = 128.0f;
 
+    while (1) {
+        if (current_band == BAND_ALL) continue;
+
+        get_band_limits(current_band, &low_hz, &high_hz);
+
+        for (int i = 0; i < MAX_POINTS; ++i) {
+            int idx = (data_index + i) % MAX_POINTS;
+            local_data[i][0] = data[idx][0];
+            local_data[i][1] = data[idx][1];
+        }
+
+        compute_band_filtered_from(local_data, temp_filtered, 0, low_hz, high_hz);
+        compute_band_filtered_from(local_data, temp_filtered, 1, low_hz, high_hz);
+
+        EnterCriticalSection(&cs_filtered_data);
+        memcpy(filtered_data, temp_filtered, sizeof(filtered_data));
+        LeaveCriticalSection(&cs_filtered_data);
+    }
+    return 0;
+}
+
+void draw_plot(HDC hdc, RECT* rect) {    
     HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
     FillRect(hdc, rect, brush);
     DeleteObject(brush);
@@ -212,10 +219,9 @@ void draw_plot(HDC hdc, RECT* rect) {
             MoveToEx(hdc, leftMargin, y, NULL);
             LineTo(hdc, width, y);
 
-            // Prevent 0 and 1024 labels from overlapping edge
             int textY = y;
-            if (i == 0) textY -= 4;        // Push 0 label up a bit
-            else if (i == 4) textY += 4;   // Push 1024 label down a bit
+            if (i == 0) textY -= 4;
+            else if (i == 4) textY += 4;
 
             wchar_t label[32];
             swprintf(label, L"%.0f", 1024 - value);
@@ -229,12 +235,12 @@ void draw_plot(HDC hdc, RECT* rect) {
         HPEN pen = CreatePen(PS_SOLID, 1, colors[ch]);
         oldPen = (HPEN)SelectObject(hdc, pen);
 
+        EnterCriticalSection(&cs_filtered_data);  // <-- start thread-safe read
         for (int i = 0; i < MAX_POINTS - 1; ++i) {
             int idx1 = (data_index + i) % MAX_POINTS;
             int idx2 = (data_index + i + 1) % MAX_POINTS;
 
-            float v1;
-            float v2;
+            float v1, v2;
             if (current_band == BAND_ALL) {
                 v1 = data[idx1][ch];
                 v2 = data[idx2][ch];
@@ -255,6 +261,7 @@ void draw_plot(HDC hdc, RECT* rect) {
             MoveToEx(hdc, x1, y1, NULL);
             LineTo(hdc, x2, y2);
         }
+        LeaveCriticalSection(&cs_filtered_data);  // <-- end thread-safe read
 
         SelectObject(hdc, oldPen);
         DeleteObject(pen);
@@ -263,9 +270,8 @@ void draw_plot(HDC hdc, RECT* rect) {
         const char* label = (ch == 0) ? "CH1" : "CH2";
         TextOutA(hdc, width - 35, yBase + 10, label, 3);	
 
-        // Draw separator line between channels after CH1
         if (ch == 0) {
-            HPEN sepPen = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));  // Gray separator
+            HPEN sepPen = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));
             oldPen = (HPEN)SelectObject(hdc, sepPen);
 
             int separatorY = yBase + channelHeight + (channelPadding / 2);
@@ -324,6 +330,8 @@ int WINAPI WinMain(HINSTANCE hInst, HINSTANCE hPrev, LPSTR lpCmdLine, int nCmdSh
         CheckMenuItem(hMenuBar, i, MF_BYCOMMAND | ((i == (ID_BAND_ALL + current_band)) ? MF_CHECKED : MF_UNCHECKED)); // initialize the active menu item
     }
 
+    InitializeCriticalSection(&cs_filtered_data);
+    CreateThread(NULL, 0, FilteringThread, NULL, 0, NULL);
     SetThreadExecutionState(ES_CONTINUOUS | ES_DISPLAY_REQUIRED);
     ShowWindow(hwnd, nCmdShow);
     UpdateWindow(hwnd);

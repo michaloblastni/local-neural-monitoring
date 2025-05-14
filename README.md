@@ -1,6 +1,6 @@
 # Local Neural Monitoring 0.2.0
 
-**Local Neural Monitoring** is a simple Windows application that monitors and records your neural activity at home. It works with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware), which you plug into your computer with a USB cable. The application shows two channels with your neural activity, allows you to filter the alpha waves, beta waves, and other. You can also record your neural activity with it and later analyze it using Jupyter notebook to investigate something that you want to know.
+**Local Neural Monitoring** is a simple Windows application that monitors and records your neural activity at home. It works with the [Olimex EEG-SMT device](https://www.olimex.com/Products/EEG/OpenEEG/EEG-SMT/open-source-hardware), which you plug into your computer with a USB cable. The application shows two channels with your neural activity, allows you to filter the alpha waves, beta waves, and other. You can also record your neural activity with it and later analyze it using Jupyter notebook to investigate something that you want to know.
 
 ![Local Neural Monitoring](local_neural_monitoring.png)
 

@@ -39,8 +39,10 @@ Total hardware cost: **143 EUR**
 2. Plug the device into a USB port
 3. Run the application and you will see your EEG waveform updated in real time
 4. See Help → Contents to learn the basics
-5. Press File → Start recording / stop recording if you want to record your neural activity into a file
 6. Filter brainwave type using the Band menu if you want to investigate some specific neural activity
+7. Press File → Start recording / stop recording if you want to record your neural activity into a file
+
+Once you become proficient by reading the Help and experimenting with the device, you can use it also with more advanced software such as Electric Guru, OpenViBE, BrainBay.
 
 ## 📂 File Overview for developers
 - `Makefile` - Makefile for MINGW

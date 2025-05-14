@@ -28,6 +28,7 @@
 float data[MAX_POINTS][2];
 float filtered_data[MAX_POINTS][2];
 int data_index = 0;
+int filtered_data_base_index = 0;
 CRITICAL_SECTION cs_filtered_data;
 HANDLE hSerial;
 
@@ -119,42 +120,65 @@ DWORD WINAPI SerialThread(LPVOID lpParam) {
     return 0;
 }
 
+void fft_cooley_tukey(complex float* x, complex float* X, int N) {
+    if (N <= 1) {
+        X[0] = x[0];
+        return;
+    }
+
+    int half = N / 2;
+    complex float even[half], odd[half];
+    for (int i = 0; i < half; i++) {
+        even[i] = x[2 * i];
+        odd[i] = x[2 * i + 1];
+    }
+
+    complex float even_fft[half], odd_fft[half];
+    fft_cooley_tukey(even, even_fft, half);
+    fft_cooley_tukey(odd, odd_fft, half);
+
+    for (int k = 0; k < half; k++) {
+        complex float t = cexpf(-2.0f * I * (float)M_PI * k / N) * odd_fft[k];
+        X[k] = even_fft[k] + t;
+        X[k + half] = even_fft[k] - t;
+    }
+}
+
+void ifft_cooley_tukey(complex float* X, complex float* x, int N) {
+    complex float X_conj[N];
+    for (int i = 0; i < N; i++) X_conj[i] = conjf(X[i]);
+
+    complex float x_temp[N];
+    fft_cooley_tukey(X_conj, x_temp, N);
+
+    for (int i = 0; i < N; i++) x[i] = conjf(x_temp[i]) / N;
+}
+
 void compute_band_filtered_from(float in[][2], float out[][2], int ch, float low_hz, float high_hz) {
     int N = MAX_POINTS;
     complex float x[MAX_POINTS];
     complex float X[MAX_POINTS] = {0};
     complex float Y[MAX_POINTS] = {0};
+    complex float y[MAX_POINTS];
 
-    float dc = 0;
-    for (int i = 0; i < N; ++i) dc += in[i][ch];
-    dc /= N;
-
-    for (int i = 0; i < N; ++i) x[i] = in[i][ch] - dc;
-
-    for (int k = 0; k < N; ++k) {
-        for (int n = 0; n < N; ++n) {
-            float angle = -2.0f * (float)M_PI * k * n / N;
-            X[k] += x[n] * cexpf(I * angle);
-        }
+    for (int i = 0; i < N; ++i) {
+        x[i] = in[i][ch] - 512.0f;  // remove DC bias
     }
+
+    fft_cooley_tukey(x, X, N);
 
     float freq_res = (float)SAMPLE_RATE / N;
-    int half = N / 2;
-    for (int k = 0; k <= half; ++k) {
-        float freq = k * freq_res;
+    for (int k = 0; k < N; ++k) {
+        float freq = (k <= N / 2) ? k * freq_res : (k - N) * freq_res;
         if (freq >= low_hz && freq <= high_hz) {
             Y[k] = X[k];
-            if (k != 0 && k != half) Y[N - k] = conjf(X[N - k]);
         }
     }
 
-    for (int n = 0; n < N; ++n) {
-        complex float sum = 0;
-        for (int k = 0; k < N; ++k) {
-            float angle = 2.0f * (float)M_PI * k * n / N;
-            sum += Y[k] * cexpf(I * angle);
-        }
-        out[n][ch] = crealf(sum) / N + dc;
+    ifft_cooley_tukey(Y, y, N);
+
+    for (int i = 0; i < N; ++i) {
+        out[i][ch] = crealf(y[i]) + 512.0f;  // re-add offset
     }
 }
 
@@ -162,29 +186,34 @@ DWORD WINAPI FilteringThread(LPVOID lpParam) {
     float local_data[MAX_POINTS][2];
     float temp_filtered[MAX_POINTS][2];
     float low_hz = 0.0f, high_hz = 128.0f;
+    static int stable_base_index = 0;
 
     while (1) {
         if (current_band == BAND_ALL) continue;
 
         get_band_limits(current_band, &low_hz, &high_hz);
 
+        EnterCriticalSection(&cs_filtered_data);
+        int base_index = (data_index + MAX_POINTS - 1) % MAX_POINTS;  // lock oldest sample in view
         for (int i = 0; i < MAX_POINTS; ++i) {
-            int idx = (data_index + i) % MAX_POINTS;
+            int idx = (base_index + i) % MAX_POINTS;
             local_data[i][0] = data[idx][0];
             local_data[i][1] = data[idx][1];
         }
+        LeaveCriticalSection(&cs_filtered_data);
 
         compute_band_filtered_from(local_data, temp_filtered, 0, low_hz, high_hz);
         compute_band_filtered_from(local_data, temp_filtered, 1, low_hz, high_hz);
 
         EnterCriticalSection(&cs_filtered_data);
         memcpy(filtered_data, temp_filtered, sizeof(filtered_data));
+        filtered_data_base_index = base_index;
         LeaveCriticalSection(&cs_filtered_data);
     }
     return 0;
 }
 
-void draw_plot(HDC hdc, RECT* rect) {    
+void draw_plot(HDC hdc, RECT* rect) {
     HBRUSH brush = CreateSolidBrush(RGB(255, 255, 255));
     FillRect(hdc, rect, brush);
     DeleteObject(brush);
@@ -235,40 +264,52 @@ void draw_plot(HDC hdc, RECT* rect) {
         HPEN pen = CreatePen(PS_SOLID, 1, colors[ch]);
         oldPen = (HPEN)SelectObject(hdc, pen);
 
-        EnterCriticalSection(&cs_filtered_data);  // <-- start thread-safe read
-        for (int i = 0; i < MAX_POINTS - 1; ++i) {
-            int idx1 = (data_index + i) % MAX_POINTS;
-            int idx2 = (data_index + i + 1) % MAX_POINTS;
+        if (current_band == BAND_ALL) {
+            for (int i = 0; i < MAX_POINTS - 1; ++i) {
+                int idx1 = (data_index + i) % MAX_POINTS;
+                int idx2 = (data_index + i + 1) % MAX_POINTS;
+                float v1 = data[idx1][ch];
+                float v2 = data[idx2][ch];
 
-            float v1, v2;
-            if (current_band == BAND_ALL) {
-                v1 = data[idx1][ch];
-                v2 = data[idx2][ch];
-            } else {
-                v1 = filtered_data[idx1][ch];
-                v2 = filtered_data[idx2][ch];
+                float norm1 = (v1 - roundedMin) / displayRange;
+                float norm2 = (v2 - roundedMin) / displayRange;
+
+                int x1 = leftMargin + (i * plotWidth) / MAX_POINTS;
+                int x2 = leftMargin + ((i + 1) * plotWidth) / MAX_POINTS;
+
+                int y1 = yBase + (int)(norm1 * channelHeight);
+                int y2 = yBase + (int)(norm2 * channelHeight);
+
+                MoveToEx(hdc, x1, y1, NULL);
+                LineTo(hdc, x2, y2);
             }
+        } else {
+            EnterCriticalSection(&cs_filtered_data);
+            for (int i = 0; i < MAX_POINTS - 1; ++i) {
+                float v1 = filtered_data[i][ch];
+                float v2 = filtered_data[i + 1][ch];
 
-            float norm1 = (v1 - roundedMin) / displayRange;
-            float norm2 = (v2 - roundedMin) / displayRange;
+                float norm1 = (v1 - roundedMin) / displayRange;
+                float norm2 = (v2 - roundedMin) / displayRange;
 
-            int x1 = leftMargin + (i * plotWidth) / MAX_POINTS;
-            int x2 = leftMargin + ((i + 1) * plotWidth) / MAX_POINTS;
+                int x1 = leftMargin + (i * plotWidth) / MAX_POINTS;
+                int x2 = leftMargin + ((i + 1) * plotWidth) / MAX_POINTS;
 
-            int y1 = yBase + (int)(norm1 * channelHeight);
-            int y2 = yBase + (int)(norm2 * channelHeight);
+                int y1 = yBase + (int)(norm1 * channelHeight);
+                int y2 = yBase + (int)(norm2 * channelHeight);
 
-            MoveToEx(hdc, x1, y1, NULL);
-            LineTo(hdc, x2, y2);
+                MoveToEx(hdc, x1, y1, NULL);
+                LineTo(hdc, x2, y2);
+            }
+            LeaveCriticalSection(&cs_filtered_data);
         }
-        LeaveCriticalSection(&cs_filtered_data);  // <-- end thread-safe read
 
         SelectObject(hdc, oldPen);
         DeleteObject(pen);
 
         SetTextColor(hdc, colors[ch]);
         const char* label = (ch == 0) ? "CH1" : "CH2";
-        TextOutA(hdc, width - 35, yBase + 10, label, 3);	
+        TextOutA(hdc, width - 35, yBase + 10, label, 3);
 
         if (ch == 0) {
             HPEN sepPen = CreatePen(PS_SOLID, 1, RGB(160, 160, 160));

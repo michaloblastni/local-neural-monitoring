@@ -33,7 +33,10 @@
 - A small driver so your computer can recognize the device (Windows Universal X64): [ftdichip.com](https://www.ftdichip.com/Drivers/VCP.htm)
 
 Total hardware cost: **143 EUR**
-  
+
+## How to use professional electrodes with EEG-SMT
+[https://www.olimex.com/forum/index.php?topic=9856.0](https://www.olimex.com/forum/index.php?topic=9856.0)
+
 ## 🧭 How to start (even if you're not a developer)
 
 1. Download the .exe from the latest release

@@ -5,9 +5,10 @@
 ![Local Neural Monitoring](local_neural_monitoring.png)
 
 ## 🗃️ Releases
-- [0.2.0](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.2.0)
-- [0.1.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.1.1)
-- [0.0.1](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
+- [0.2.1 Alpha for Linux](https://gist.github.com/michaloblastni/08534a2bfb258f35e1bfebf73c34efaf) - same functions as 0.2.0 for Windows
+- [0.2.0 for Windows](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.2.0)
+- [0.1.1 for Windows](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.1.1)
+- [0.0.1 for Windows](https://github.com/michaloblastni/local-neural-monitoring/releases/tag/0.0.1)
 
 ## ✅ What it does
 

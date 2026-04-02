@@ -1,0 +1,46 @@
+#include <windows.h>
+#include "resource.h"
+
+LANGUAGE LANG_NEUTRAL, SUBLANG_NEUTRAL
+
+/* ── Main window menu ─────────────────────────────────────────────────── */
+IDR_MAINMENU MENU
+BEGIN
+    POPUP "File"
+    BEGIN
+        MENUITEM "Start Recording",     ID_FILE_START_RECORDING
+        MENUITEM "Stop Recording",      ID_FILE_STOP_RECORDING
+        MENUITEM "Settings...",         ID_FILE_SETTINGS
+        MENUITEM SEPARATOR
+        MENUITEM "Exit",                ID_FILE_EXIT
+    END
+    POPUP "Band"
+    BEGIN
+        MENUITEM "All",                 ID_BAND_ALL,   CHECKED
+        MENUITEM "Delta (0.5-4 Hz)",   ID_BAND_DELTA
+        MENUITEM "Theta (4-8 Hz)",     ID_BAND_THETA
+        MENUITEM "Alpha (8-13 Hz)",    ID_BAND_ALPHA
+        MENUITEM "Beta (13-30 Hz)",    ID_BAND_BETA
+        MENUITEM "Gamma (30-100 Hz)",  ID_BAND_GAMMA
+    END
+    POPUP "Help"
+    BEGIN
+        MENUITEM "Contents",            ID_HELP_CONTENTS
+        MENUITEM "About",               ID_HELP_ABOUT
+    END
+END
+
+/* ── Settings dialog ──────────────────────────────────────────────────── */
+IDD_SETTINGS DIALOGEX 0, 0, 280, 138
+STYLE DS_MODALFRAME | DS_SETFONT | WS_POPUP | WS_CAPTION | WS_SYSMENU
+CAPTION "Settings"
+FONT 9, "Segoe UI"
+BEGIN
+    LTEXT           "Serial port:", -1, 12, 10, 200, 10
+    COMBOBOX        ID_COMBO_PORT, 12, 22, 256, 120, CBS_DROPDOWNLIST | CBS_AUTOHSCROLL | WS_VSCROLL | WS_TABSTOP
+    LTEXT           "Supported devices: Olimex EEG-SMT, OpenBCI Cyton Board", ID_STATIC_HELP, 12, 44, 256, 22
+    LTEXT           "", ID_STATIC_STATUS, 12, 68, 256, 12
+    PUSHBUTTON      "Auto-detect", ID_BTN_AUTO, 12, 90, 72, 16
+    DEFPUSHBUTTON   "OK", IDOK, 130, 90, 60, 16
+    PUSHBUTTON      "Cancel", IDCANCEL, 200, 90, 60, 16
+END

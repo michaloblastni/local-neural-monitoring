@@ -31,7 +31,30 @@
 extern "C" {
 #endif
 
-// Main check logic that prompts the user and disables the serial mouse if applicable
+/*
+ * CheckAndDisableSerialMouse
+ * --------------------------
+ * Input:     None.
+ *
+ * Operation: On first run (per user, tracked via REG_CONFIRM_* under
+ *            REG_CONFIRM_KEY in HKEY_CURRENT_USER), reads the Windows serial
+ *            mouse driver service "Start" value (HKLM ...\\Services\\sermouse).
+ *            If the driver is enabled (Start != 4), shows a modal dialog asking
+ *            whether the user uses a serial mouse; stores the answer in the
+ *            registry. If the user opts to disable the driver and the process
+ *            is not elevated, relaunches the executable with "runas" and exits
+ *            the current process. If already elevated and a prior run requested
+ *            disable, sets the driver Start type to 4 (disabled), shows a
+ *            message, and exits. Subsequent calls respect the stored prompt flag
+ *            and only perform the disable step when appropriate and running
+ *            as administrator. If the sermouse key is missing or the driver is
+ *            already disabled, returns without UI.
+ *
+ * Output:    None (void). May terminate the process (ExitProcess) after
+ *            applying settings or after relaunching elevated. May show
+ *            MessageBox dialogs. Does not return a status code.
+ */
+
 void CheckAndDisableSerialMouse(void);
 
 #ifdef __cplusplus
